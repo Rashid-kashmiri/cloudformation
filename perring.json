@@ -1,0 +1,31 @@
+"myVPCPeeringConnection": {
+  "Type": "AWS::EC2::VPCPeeringConnection",
+  "Properties": {
+    "VpcId": {
+      "Ref": "VPC2"
+    },
+    "PeerVpcId": "vpc-40d4f728"
+  }
+},
+"PeeringRoute1": {
+  "Type": "AWS::EC2::Route",
+  "Properties": {
+    "DestinationCidrBlock": "10.0.0.0/16",
+    "RouteTableId": "rtb-2aaa4a41",
+    "VpcPeeringConnectionId": {
+      "Ref": "myVPCPeeringConnection"
+    }
+  }
+},
+"PeeringRoute2": {
+  "Type": "AWS::EC2::Route",
+  "Properties": {
+    "DestinationCidrBlock": "172.31.0.0/16",
+    "RouteTableId": {
+      "Ref": "PrivateRouteTable"
+    },
+    "VpcPeeringConnectionId": {
+      "Ref": "myVPCPeeringConnection"
+    }
+  }
+}

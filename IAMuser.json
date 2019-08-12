@@ -1,0 +1,106 @@
+{
+  "Resources": {
+
+    "SophosUser1Policy": {
+        "Type": "AWS::IAM::Policy",
+        "Properties": {
+            "PolicyName": "SophosUser1Policy",
+            "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": [
+                            "autoscaling:Describe*",
+                            "budgets:ViewBudget",
+                            "cloudtrail:DescribeTrails",
+                            "cloudtrail:GetTrailStatus",
+                            "cloudwatch:Describe*",
+                            "cloudwatch:Get*",
+                            "cloudwatch:List*",
+                            "dynamodb:list*",
+                            "dynamodb:describe*",
+                            "ec2:Describe*",
+                            "ec2:Get*",
+                            "ecs:Describe*",
+                            "ecs:List*",
+                            "elasticache:Describe*",
+                            "elasticache:List*",
+                            "elasticfilesystem:DescribeTags",
+                            "elasticfilesystem:DescribeFileSystems",
+                            "elasticloadbalancing:Describe*",
+                            "elasticmapreduce:List*",
+                            "elasticmapreduce:Describe*",
+                            "es:ListTags",
+                            "es:ListDomainNames",
+                            "es:DescribeElasticsearchDomains",
+                            "kinesis:List*",
+                            "kinesis:Describe*",
+                            "logs:Get*",
+                            "logs:Describe*",
+                            "logs:FilterLogEvents",
+                            "logs:TestMetricFilter",
+                            "rds:Describe*",
+                            "rds:List*",
+                            "route53:List*",
+                            "s3:GetBucketTagging",
+                            "s3:ListAllMyBuckets",
+                            "ses:Get*",
+                            "sns:List*",
+                            "sns:Publish",
+                            "sqs:GetQueueAttributes",
+                            "sqs:ListQueues",
+                            "sqs:ReceiveMessage",
+                            "support:*",
+                            "tag:getResources",
+                            "tag:getTagKeys",
+                            "tag:getTagValues"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "*"
+                    }
+                ]
+            },
+            "Users": [{"SophosUser1"]
+        }
+    },
+    "SophosUser1": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": "SophosUser1",
+         "Path" : "/",
+        "LoginProfile": {
+          "Password": "myP@ssW0rd"
+        }
+      }
+    },
+      "Myaccesskey": {
+        "Type": "AWS::IAM::AccessKey",
+        "Properties": {
+          "Status": "Active",
+          "UserName": {
+            "Ref": "SophosUser1"
+          }
+        }
+      },
+      "GroupSophosUser1": {
+        "Type": "AWS::IAM::Group",
+        "Properties": {
+          "GroupName": "GroupSophosUser1",
+          "Policies" : [ {"Ref": "SophosUser1" } ]
+        }
+      },
+      "ADDUserToGroup": {
+        "Type": "AWS::IAM::UserToGroupAddition",
+        "Properties": {
+          "GroupName": {
+            "Ref": "GroupSophosUser1"
+          },
+          "Users": [
+            {
+              "Ref": "SophosUser1"
+            }
+          ]
+        }
+      }
+    }
+  }

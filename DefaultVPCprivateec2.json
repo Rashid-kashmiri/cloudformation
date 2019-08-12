@@ -1,0 +1,91 @@
+{
+  "Parameters": {
+    "InstanceTypeParameter": {
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "t2.micro"
+      ],
+      "Description": "Enter t2.micro, t2.medium, or t2.large. Default is t2.micro"
+    },
+    "InstanceKeyName": {
+      "Description": "Provide key pair to launch the ec2 instance",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "AZs": {
+      "Description": "Availability Zone Details",
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "ap-south-1": {
+        "AMI": "ami-0d2692b6acea72ee6"
+      },
+      "us-east-1": {
+        "AMI": "ami-0c322300a1dd5dc79"
+      }
+    }
+  },
+  "Resources": {
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow http to client host",
+        "VpcId": "vpc-cd66d1b7",
+        "SecurityGroupIngress": [{
+          "IpProtocol": "-1",
+          "FromPort": 22,
+          "ToPort": 22,
+          "SourceSecurityGroupId": "sg-0991f7f38c057682f"	
+        },
+	
+	{
+          "IpProtocol": "-1",
+          "FromPort": 22,
+          "ToPort": 22,
+        
+	"SourceSecurityGroupId":   "sg-0bada7d196cbcf1f3"
+        }],
+        "SecurityGroupEgress": {
+          "IpProtocol": "-1",
+          "FromPort": 22,
+          "ToPort": 22,
+          "CidrIp": "0.0.0.0/0"
+        }
+      }
+    },
+    "Ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "InstanceType": {
+          "Ref": "InstanceTypeParameter"
+        },
+        "KeyName": {
+          "Ref": "InstanceKeyName"
+        },
+        "SubnetId": "subnet-0b8717be1f78c0fcf"
+      },
+      "DependsOn": [
+        "InstanceSecurityGroup"
+      ]
+    }
+  }
+}
