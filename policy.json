@@ -1,0 +1,111 @@
+{
+  "Parameters": {
+    "appStorageGatewayBucketName": {
+      "Description": "The name of the storage gateway bucket",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Instanceprofilename": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "InstanceProfileName": "Instanceprofilename",
+        "Roles": [
+          {
+            "Ref": "iamRole"
+          }
+        ]
+      }
+    },
+    "iamRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "TestRolewithPolicy",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "apigateway.amazonaws.com",
+                  "batch.amazonaws.com",
+                  "cloudformation.amazonaws.com",
+                  "ec2.amazonaws.com",
+                  "ecs-tasks.amazonaws.com",
+                  "ecs.amazonaws.com",
+                  "elasticmapreduce.amazonaws.com",
+                  "events.amazonaws.com",
+                  "glue.amazonaws.com",
+                  "lambda.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+          "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+        ],
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "s3:*",
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:s3:::cf-templates-*-${AWS::Region}"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:s3:::cf-templates-*-${AWS::Region}/*"
+                    }
+                  ]
+                }
+              ]
+            },
+            "PolicyName": "Policy1"
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "s3:PutObject"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}/service-bus/snpf-to-lex/*"
+                    }
+                  ]
+                },
+                {
+                  "Action": [
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketNotification",
+                    "s3:GetObject",
+                    "s3:ListBucket"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}/*"
+                    }
+                  ]
+                }
+              ]
+            },
+            "PolicyName": "Policy2"
+          }
+        ]
+      }
+    }
+  }
+}
