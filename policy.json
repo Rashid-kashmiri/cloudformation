@@ -1,101 +1,99 @@
 {
+  "Parameters": {
+    "appStorageGatewayBucketName": {
+      "Description": "The name of the storage gateway bucket",
+      "Type": "String"
+    }
+  },
   "Resources": {
-    "myqueue": {
-      "Type": "AWS::SQS::Queue",
+    "iamRole": {
+      "Type": "AWS::IAM::Role",
       "Properties": {
-        "QueueName": "SampleQueue"
-      }
-    },
-    "mytopic": {
-      "Type": "AWS::SNS::Topic",
-      "Properties": {
-        "DisplayName": "mytopic",
-        "TopicName": "mytopic1"
-      }
-    },
-    "myuser": {
-      "Type": "AWS::IAM::User",
-      "Properties": {
-        "Path": "/",
-        "LoginProfile": {
-          "Password": "myP@ssW0rd"
+        "RoleName": "TestRolewithPolicy",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "apigateway.amazonaws.com",
+                  "batch.amazonaws.com",
+                  "cloudformation.amazonaws.com",
+                  "ec2.amazonaws.com",
+                  "ecs-tasks.amazonaws.com",
+                  "ecs.amazonaws.com",
+                  "elasticmapreduce.amazonaws.com",
+                  "events.amazonaws.com",
+                  "glue.amazonaws.com",
+                  "lambda.amazonaws.com"
+                ]
+              }
+            }
+          ]
         },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+          "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+          "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+        ],
         "Policies": [
           {
-            "PolicyName": "giveaccesstoqueueonly",
             "PolicyDocument": {
-              "Version": "2012-10-17",
               "Statement": [
                 {
+                  "Action": "s3:*",
                   "Effect": "Allow",
-                  "Action": [
-                    "sqs:*"
-                  ],
                   "Resource": [
                     {
-                      "Fn::GetAtt": [
-                        "myqueue",
-                        "Arn"
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "Effect": "Deny",
-                  "Action": [
-                    "sqs:*"
-                  ],
-                  "NotResource": [
+                      "Fn::Sub": "arn:aws:s3:::cf-templates-*-${AWS::Region}"
+                    },
                     {
-                      "Fn::GetAtt": [
-                        "myqueue",
-                        "Arn"
-                      ]
+                      "Fn::Sub": "arn:aws:s3:::cf-templates-*-${AWS::Region}/*"
                     }
                   ]
                 }
               ]
-            }
+            },
+            "PolicyName": "Policy1"
           },
           {
-            "PolicyName": "giveaccesstotopiconly",
             "PolicyDocument": {
-              "Version": "2012-10-17",
               "Statement": [
                 {
-                  "Effect": "Allow",
                   "Action": [
-                    "sns:*"
+                    "s3:PutObject"
                   ],
+                  "Effect": "Allow",
                   "Resource": [
                     {
-                      "Ref": "mytopic"
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}/service-bus/snpf-to-lex/*"
                     }
                   ]
                 },
                 {
-                  "Effect": "Deny",
                   "Action": [
-                    "sns:*"
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketNotification",
+                    "s3:GetObject",
+                    "s3:ListBucket"
                   ],
-                  "NotResource": [
+                  "Effect": "Allow",
+                  "Resource": [
                     {
-                      "Ref": "mytopic"
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:s3:::${appStorageGatewayBucketName}/*"
                     }
                   ]
                 }
               ]
-            }
+            },
+            "PolicyName": "Policy2"
           }
         ]
-      }
-    },
-    "myaccesskey": {
-      "Type": "AWS::IAM::AccessKey",
-      "Properties": {
-        "UserName": {
-          "Ref": "myuser"
-        }
       }
     }
   }
