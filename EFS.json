@@ -1,0 +1,58 @@
+"Resources": {
+        "filesystem": {
+            "Type": "AWS::EFS::FileSystem",
+            "Properties": {                
+	        "Encrypted": true,
+                "KmsKeyId": {
+                    "Fn::GetAtt": [
+                        "key",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "key": {
+            "Type": "AWS::KMS::Key",
+            "Properties": {
+                "KeyPolicy": {
+                    "Version": "2012-10-17",
+                    "Id": "key-default-1",
+                    "Statement": [
+                        {
+                            "Sid": "Allow administration of the key",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "arn:aws:iam::",
+                                            {
+                                                "Ref": "AWS::AccountId"
+                                            },
+                                            ":root"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "Action": [
+                                "kms:*"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "KeyId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "key",
+                    "Arn"
+                ]
+            }
+        }
+    }
+}
