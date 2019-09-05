@@ -1,0 +1,423 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Builds a VPC Public and Private Subnets, ALB and SG.",
+    "Parameters": {
+        "AZ1": {
+          "Description": "The first AZ defined by the user ",
+          "Type": "String"
+                },
+        "AZ2": {
+            "Description": "The second AZ defined by the user ",
+            "Type": "String"
+                },
+        "VPCCIDRBlock": {
+            "Description": " The IP address range used by the VPC.",
+            "Type": "String"
+        },
+        "PublicSubnetCIDR1": {
+            "Description": " Valid Subnet within the VPC CIDR Range to be used for Public Subnet",
+            "Type": "String"
+        },
+        "PublicSubnetCIDR2": {
+            "Description": " Valid Subnet within the VPC CIDR Range to be used for Public Subnet",
+            "Type": "String"
+        },
+        "PrivateSubnetCIDR1": {
+            "Description": " Valid Subnet within the VPC CIDR Range to be used for Private Subnet",
+            "Type": "String"
+        },
+        "PrivateSubnetCIDR2": {
+            "Description": " Valid Subnet within the VPC CIDR Range to be used for Private Subnet",
+            "Type": "String"
+        },
+        "EnvironmentName": {
+            "Description": "An environment name that will be prefixed to resource names",
+            "Type": "String"
+        },
+        "JenkinsHealthCheckPath": {
+            "Type": "String",
+            "Default": "/login"
+          },
+        "JenkinsHealthCheckPort": {
+            "Type": "String",
+            "Default": "8080"
+          },
+        "LoadBalancerCIDR": {
+          "Type": "String"
+        }
+      },
+    "Resources": {
+        "StandardVPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "EnableDnsSupport": true,
+                "EnableDnsHostnames": true,
+                "CidrBlock": {
+                  "Ref": "VPCCIDRBlock"
+                }
+            }
+        },
+        "PublicSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "AvailabilityZone":{
+                  "Ref":"AZ1"
+                  },
+                "CidrBlock": {
+                  "Ref": "PublicSubnetCIDR1"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Public" } ]
+            }
+        },
+        "PublicSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "AvailabilityZone":{
+                  "Ref":"AZ2"
+                  },
+                "CidrBlock": {
+                  "Ref": "PublicSubnetCIDR2"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Public" } ]
+            }
+        },
+        "PrivateSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "AvailabilityZone":{
+                  "Ref":"AZ1"
+                  },
+                "CidrBlock": {
+                  "Ref": "PrivateSubnetCIDR1"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Private" } ]
+            }
+        },
+        "PrivateSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "AvailabilityZone":{
+                  "Ref":"AZ2"
+                  },
+                "CidrBlock": {
+                  "Ref": "PrivateSubnetCIDR2"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Private" } ]
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {}
+        },
+        "EC2VPCG3S219": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                },
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                }
+            }
+        },
+        "NATGatewayAZ1": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "EIP1",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet1"
+                }
+            },
+            "DependsOn": [
+                "PublicRouteTable"
+            ]
+        },
+        "EIP1": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "NATGatewayAZ2": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "EIP2",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet2"
+                }
+            },
+            "DependsOn": [
+                "PublicRouteTable"
+            ]
+        },
+        "EIP2": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "RTAPriSub1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTableAZ1"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnet1"
+                }
+            }
+        },
+        "RTAPriSub2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTableAZ2"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnet2"
+                }
+            }
+        },
+        "PublicRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Public" } ]
+            }
+        },
+        "PublicRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "RTAPubSub1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet1"
+                }
+            }
+        },
+        "RTAPubSub2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet2"
+                }
+            }
+        },
+        "PrivateRouteTableAZ1": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Private" } ]
+            }
+        },
+        "PrivateRouteTableAZ2": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "StandardVPC"
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : "Private" } ]
+            }
+        },
+        "PrivateRouteAZ1": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTableAZ1"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NATGatewayAZ1"
+                }
+            }
+        },
+      "PrivateRouteAZ2": {
+          "Type": "AWS::EC2::Route",
+          "Properties": {
+              "RouteTableId": {
+                  "Ref": "PrivateRouteTableAZ2"
+              },
+              "DestinationCidrBlock": "0.0.0.0/0",
+              "NatGatewayId": {
+                  "Ref": "NATGatewayAZ2"
+              }
+          }
+      },
+      "DhcpOptions" : {
+         "Type" : "AWS::EC2::DHCPOptions",
+         "Properties" : {
+            "DomainNameServers" : [ "AmazonProvidedDNS" ]
+         }
+       },
+  "VPCDHCPOptionsAssociation" : {
+  "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+  "Properties" : {
+    "VpcId" : {"Ref" : "StandardVPC"},
+    "DhcpOptionsId" : {"Ref" : "DhcpOptions"}
+            }
+          },
+  "EKSWorkshopServiceSG" : {
+   "Type" : "AWS::CloudFormation::Stack",
+   "Properties" : {
+      "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/security-groups.json",
+        "TimeoutInMinutes" : 60,
+        "Parameters": {
+          "EnvironmentName": {
+                "Ref" : "EnvironmentName"
+              },
+          "VPC" : {"Ref" : "StandardVPC"},
+          "LoadBalancerCIDR": {"Ref" : "LoadBalancerCIDR"}
+        }
+      }
+    },
+    "EKSWorkshopALB" : {
+     "Type" : "AWS::CloudFormation::Stack",
+     "Properties" : {
+        "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/load-balancers.json",
+          "TimeoutInMinutes" : 60,
+          "Parameters": {
+            "EnvironmentName": {
+                  "Ref" : "EnvironmentName"
+                  },
+            "VPC" : {"Ref" : "StandardVPC"},
+            "Subnet1" : { "Ref" : "PublicSubnet1" },
+            "Subnet2" : {"Ref" : "PublicSubnet2" },
+            "SecurityGroup" : {"Fn::GetAtt" : [ "EKSWorkshopServiceSG", "Outputs.LoadBalancerSecurityGroup" ]},
+            "HealthCheckPath": {"Ref": "JenkinsHealthCheckPath"},
+            "HealthCheckPort": {"Ref": "JenkinsHealthCheckPort"}
+          }
+        }
+      }
+  },
+    "Outputs" : {
+      "StackName" : {
+        "Description" : "The name of the ServiceStack",
+        "Value": {"Ref": "AWS::StackName" },
+        "Export" : {
+          "Name" : {"Ref": "AWS::StackName" }
+          }
+        },
+      "StackVPC" : {
+        "Description" : "The ID of the VPC",
+        "Value" : { "Ref" : "StandardVPC" },
+        "Export" : {
+          "Name" : {"Fn::Sub": "${AWS::StackName}-VPCID" }
+          }
+        },
+     "PublicRouteTable" : {
+       "Description" : "The Public Route Table ID of the Service VPC",
+       "Value" : { "Ref" : "PublicRouteTable" },
+       "Export" : {
+         "Name" : {"Fn::Sub": "${AWS::StackName}-PublicRTBle" }
+         }
+       },
+       "PrivateRouteTableAZ1" : {
+         "Description" : "The Private AZ1 Route Table ID of the Service VPC",
+         "Value" : { "Ref" : "PrivateRouteTableAZ1" },
+         "Export" : {
+           "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateAZ1RTBle" }
+           }
+         },
+        "PrivateRouteTableAZ2" : {
+           "Description" : "The Private AZ2 Route Table ID of the Service VPC",
+           "Value" : { "Ref" : "PrivateRouteTableAZ2" },
+           "Export" : {
+             "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateAZ2RTBle" }
+             }
+           },
+           "PublicSubnetAZ1" : {
+             "Description" : "The PublicSubnet ID for AZ1 of the Service VPC",
+             "Value" : { "Ref" : "PublicSubnet1" },
+             "Export" : {
+               "Name" : {"Fn::Sub": "${AWS::StackName}-PublicSubnetAZ1" }
+               }
+             },
+         "PublicSubnetAZ2" : {
+           "Description" : "The PublicSubnet ID for AZ2 of the Service VPC",
+           "Value" : { "Ref" : "PublicSubnet2" },
+           "Export" : {
+             "Name" : {"Fn::Sub": "${AWS::StackName}-PublicSubnetAZ2" }
+             }
+           },
+         "PrivateSubnetAZ1" : {
+           "Description" : "The PrivateSubnet ID for AZ1 of the Service VPC",
+           "Value" : { "Ref" : "PrivateSubnet1" },
+           "Export" : {
+             "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateSubnetAZ1" }
+             }
+           },
+         "PrivateSubnetAZ2" : {
+           "Description" : "The PrivateSubnet ID for AZ2 of the Service VPC",
+           "Value" : { "Ref" : "PrivateSubnet2" },
+           "Export" : {
+             "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateSubnetAZ2" }
+                }
+            },
+          "ECSHostSecurityGroup": {
+            "Description" : "The SecurityGroup for use with ECS Hosts",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopServiceSG", "Outputs.ECSHostSecurityGroup" ]}
+          },
+          "LBSecurityGroup": {
+            "Description" : "The SecurityGroup for use with ECS Hosts",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopServiceSG", "Outputs.LoadBalancerSecurityGroup" ]}
+          },
+          "ServiceLB": {
+            "Description" : "The Service VPC LoadBalancer",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopALB", "Outputs.LoadBalancer" ]}
+          },
+          "ServiceLBURL": {
+            "Description" : "The Service VPC LoadBalancer URL",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopALB", "Outputs.LoadBalancerUrl" ]}
+          },
+          "ServiceLBListener": {
+            "Description" : "The Service VPC LoadBalancer port 80 listener",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopALB", "Outputs.Listener" ]}
+          },
+          "ServiceLBTarget": {
+            "Description" : "The Service VPC LoadBalancer Target Group",
+            "Value" : {"Fn::GetAtt" : [ "EKSWorkshopALB", "Outputs.TargetGroup" ]}
+          }
+      }
+}

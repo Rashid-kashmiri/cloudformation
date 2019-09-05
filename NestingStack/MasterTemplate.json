@@ -1,0 +1,272 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Nests VPC Creation Templates for EKS Workshop",
+    "Parameters": {
+    "AZ1":{
+     "Description":"The AZ for Public1 and Private1 Subnets",
+     "Type":"AWS::EC2::AvailabilityZone::Name"
+    },
+     "AZ2":{
+      "Description":"The AZ for Public2 and Private2 Subnets",
+      "Type":"AWS::EC2::AvailabilityZone::Name"
+    },
+    "KeyName": {
+        "Description": "Name of an EC2 KeyPair to enable SSH access to the instance.",
+        "Type": "AWS::EC2::KeyPair::KeyName",
+        "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+    },
+    "PublicAccessCIDR": {
+      "Type": "String",
+      "Description": "CIDR block that will have access to AWS public Loadbalancers. Use http://checkip.amazonaws.com/ to get your current IP Address.",
+      "AllowedPattern": "\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+"
+    },
+    "ServiceVPCCIDR": {
+    "Type" : "String",
+    "Default" : "10.0.8.0/22"
+    },
+    "ServicePubCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.8.0/24"
+    },
+    "ServicePubCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.9.0/24"
+    },
+    "ServicePriCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.10.0/24"
+    },
+    "ServicePriCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.11.0/24"
+    },
+    "StageVPCCIDR":{
+    "Type" : "String",
+    "Default" : "10.0.0.0/22"
+    },
+    "ProdVPCCIDR": {
+    "Type" : "String",
+    "Default" : "10.0.4.0/22"
+    },
+    "StagePubCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.0.0/24"
+    },
+    "StagePubCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.1.0/24"
+    },
+    "StagePriCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.2.0/24"
+    },
+    "StagePriCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.3.0/24"
+    },
+    "ProdPubCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.4.0/24"
+    },
+    "ProdPubCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.5.0/24"
+    },
+    "ProdPriCIDR1": {
+    "Type" : "String",
+    "Default" : "10.0.6.0/24"
+    },
+    "ProdPriCIDR2": {
+    "Type" : "String",
+    "Default" : "10.0.7.0/24"
+  },
+    "JenkinsClusterInstances": {
+    "Description": "How many ECS hosts do you want to initially deploy?",
+    "Type": "String",
+    "Default": 2
+    },
+    "JenkinsInstanceType": {
+    "Description": "Instances for the Jenkins ECS Cluster?",
+    "Type": "String",
+    "Default": "c4.large"
+    },
+    "ECSAMI" :{
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+    "Default": "/aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id"
+    },
+    "JenkinsECRAccount": {
+       "Description": "Account with Jenkins ECR Repo",
+       "Type": "String",
+       "Default": "529555812612"
+    },
+    "JenkinsRepo": {
+        "Description": "Publicly available Jenkins Repo",
+        "Type": "String",
+        "Default": "jenkins-master"
+    },
+    "JenkinsImageTag": {
+      "Description": "Current Tested Jenkins Image",
+      "Type": "String",
+      "Default": "1.0"
+    },
+    "JenkinsMasterCount": {
+    "Description": "How many Jenkins Tasks do you want to deploy?",
+    "Type": "String",
+    "Default": 1
+    }
+  },
+"Resources" : {
+        "EKSWorkshopServiceVPCStack" : {
+	       "Type" : "AWS::CloudFormation::Stack",
+	       "Properties" : {
+	          "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/VPC_Services.json",
+              "TimeoutInMinutes" : 60,
+              "Parameters": {
+              "AZ1":{
+                "Ref" : "AZ1"
+                    },
+               "AZ2":{
+                 "Ref" : "AZ2"
+                    },
+              "VPCCIDRBlock" : {
+                "Ref" : "ServiceVPCCIDR"
+                       },
+              "PublicSubnetCIDR1" : {
+                "Ref" : "ServicePubCIDR1"
+                       },
+              "PublicSubnetCIDR2" : {
+                "Ref" : "ServicePubCIDR2"
+                      },
+             "PrivateSubnetCIDR1" : {
+                "Ref" : "ServicePriCIDR1"
+                       },
+             "PrivateSubnetCIDR2" : {
+                 "Ref" : "ServicePriCIDR2"
+                      },
+             "EnvironmentName" : "Service",
+              "LoadBalancerCIDR": {
+                    "Ref": "PublicAccessCIDR"
+                }
+	           }
+           }
+          },
+       "EKSWorkshopStageVPCStack" : {
+        "Type" : "AWS::CloudFormation::Stack",
+        "Properties" : {
+           "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/VPC_Peered_Stage.json",
+             "TimeoutInMinutes" : 60,
+             "Parameters": {
+             "AZ1":{
+               "Ref" : "AZ1"
+                   },
+              "AZ2":{
+                "Ref" : "AZ2"
+                    },
+             "VPCCIDRBlock" : {
+               "Ref" : "StageVPCCIDR"
+                      },
+             "PublicSubnetCIDR1" : {
+               "Ref" : "StagePubCIDR1"
+                      },
+             "PublicSubnetCIDR2" : {
+               "Ref" : "StagePubCIDR2"
+                     },
+            "PrivateSubnetCIDR1" : {
+               "Ref" : "StagePriCIDR1"
+                      },
+            "PrivateSubnetCIDR2" : {
+                "Ref" : "StagePriCIDR2"
+                      },
+             "MyServiceVPC" :{ "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.StackVPC" ]},
+             "ServiceVPCCIDR": {
+               "Ref" : "ServiceVPCCIDR"
+             },
+             "PrivateRouteTableAZ1ServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateRouteTableAZ1" ]},
+             "PrivateRouteTableAZ2ServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateRouteTableAZ2" ]},
+             "PublicRouteTableServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PublicRouteTable" ]}
+              }
+            }
+          },
+        "EKSWorkshopProdVPCStack" : {
+         "Type" : "AWS::CloudFormation::Stack",
+         "Properties" : {
+            "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/VPC_Peered_Stage.json",
+              "TimeoutInMinutes" : 60,
+              "Parameters": {
+              "AZ1":{
+                "Ref" : "AZ1"
+                    },
+               "AZ2":{
+                 "Ref" : "AZ2"
+                     },
+              "VPCCIDRBlock" : {
+                "Ref" : "ProdVPCCIDR"
+                       },
+              "PublicSubnetCIDR1" : {
+                "Ref" : "ProdPubCIDR1"
+                       },
+              "PublicSubnetCIDR2" : {
+                "Ref" : "ProdPubCIDR2"
+                      },
+             "PrivateSubnetCIDR1" : {
+                "Ref" : "ProdPriCIDR1"
+                       },
+             "PrivateSubnetCIDR2" : {
+                 "Ref" : "ProdPriCIDR2"
+                       },
+              "MyServiceVPC" :{ "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.StackVPC" ]},
+              "ServiceVPCCIDR": {
+                "Ref" : "ServiceVPCCIDR"
+              },
+              "PrivateRouteTableAZ1ServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateRouteTableAZ1" ]},
+              "PrivateRouteTableAZ2ServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateRouteTableAZ2" ]},
+              "PublicRouteTableServiceVPC": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PublicRouteTable" ]}
+              }
+            }
+          },
+          "EKSWorkshopJenkinsStack" :{
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+              "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/cf-templates-eks-pipeline-workshop/jenkins.json",
+                "TimeoutInMinutes" : 60,
+                "Parameters": {
+                    "InstanceType": {
+                        "Ref" : "JenkinsInstanceType"
+                      },
+                    "ClusterSize": {
+                        "Ref" : "JenkinsClusterInstances"
+                    },
+                    "Subnet1" :{ "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateSubnetAZ1" ]},
+                    "Subnet2" :{ "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateSubnetAZ2" ]},
+                    "ServiceVPCStack" :{ "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.StackName" ]},
+                    "ServiceVPCID" :{"Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.StackVPC" ] },
+                    "ECSAMI" :{
+                      "Ref" : "ECSAMI"
+                    },
+                    "ECRAccount": {
+                      "Ref": "JenkinsECRAccount"
+                    },
+                    "JenkinsRepo": {
+                      "Ref": "JenkinsRepo"
+                    },
+                    "JenkinsImageTag": {
+                      "Ref": "JenkinsImageTag"
+                    },
+                    "ECSHostSecurityGroup": {"Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.ECSHostSecurityGroup" ]},
+                    "TargetGroup": {"Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.ServiceLBTarget" ]},
+                    "DesiredCount": {
+                      "Ref": "JenkinsMasterCount"
+                    }
+                  }
+                }
+        }
+    },
+    "Outputs": {
+       "StackRef": {"Value": { "Ref" : "EKSWorkshopServiceVPCStack"}},
+       "ServiceVPCID" :{"Value": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.StackVPC" ] }},
+       "PublicSubnetAZ1ServiceVPC":{"Value": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PublicSubnetAZ1" ]}},
+       "PublicSubnetAZ2ServiceVPC":{"Value": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PublicSubnetAZ2" ]}},
+       "PrivateSubnetAZ1ServiceVPC":{"Value": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateSubnetAZ1" ]}},
+       "PrivateSubnetAZ2ServiceVPC":{"Value": { "Fn::GetAtt" : [ "EKSWorkshopServiceVPCStack", "Outputs.PrivateSubnetAZ2" ]}}
+    }
+  }
