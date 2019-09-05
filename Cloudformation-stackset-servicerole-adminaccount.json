@@ -1,6 +1,8 @@
 {
+
+  "Description": "This Role should be created in ADMIN-Root AWS account from where stackset will reside",
 "Resources": {
-  "AdministrationRole": {
+  "AWSCloudformationAdministationRole": {
     "Type": "AWS::IAM::Role",
     "Properties": {
       "RoleName": "AWSCloudformationAdministationRole",
@@ -9,11 +11,7 @@
         "Statement": [
           {
             "Effect": "Allow",
-            "Principal": {
-              "Service": [
-                "cloudformation.amazonaws.com"
-              ]
-            },
+            "Principal": {"Service": ["cloudformation.amazonaws.com"]},
             "Action": [
               "sts:AssumeRole"
             ]
@@ -30,7 +28,7 @@
               {
                 "Effect": "Allow",
                 "Action": "sts:AssumeRole  ",
-                "Resource": "arn:aws:iam::*:role/AWSCloudformationStacksetExecutionRole"
+                "Resource": "arn:aws:iam::052466886362:role/AWSCloudFormationStackSetExecutionRole"
               }
             ]
           }
