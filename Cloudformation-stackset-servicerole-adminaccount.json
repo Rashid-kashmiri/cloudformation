@@ -1,0 +1,42 @@
+{
+"Resources": {
+  "AdministrationRole": {
+    "Type": "AWS::IAM::Role",
+    "Properties": {
+      "RoleName": "AWSCloudformationAdministationRole",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [
+                "cloudformation.amazonaws.com"
+              ]
+            },
+            "Action": [
+              "sts:AssumeRole"
+            ]
+          }
+        ]
+      },
+      "Path": "/",
+      "Policies": [
+        {
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole  ",
+                "Resource": "arn:aws:iam::*:role/AWSCloudformationStacksetExecutionRole"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+}
