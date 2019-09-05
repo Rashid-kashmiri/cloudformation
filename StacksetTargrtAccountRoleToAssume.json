@@ -1,0 +1,41 @@
+{
+  "Description": "AWS account ID of the administator Account The account in which Stackset will be created",
+  "Parameters": {
+    "AdministratorAccountID": {
+      "Description": "Please Enter The Admin AWS Account Number",
+      "Type": "String",
+      "MaxLength": "12",
+      "MinLength": "12"
+    }
+  },
+  "Resources": {
+    "AWSCloudFormationStackSetExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "AWSCloudFormationStackSetExecutionRole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": [
+                  {
+                    "Ref": "AdministratorAccountID"
+                  }
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ]
+      }
+    }
+  }
+}
